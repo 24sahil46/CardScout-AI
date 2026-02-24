@@ -697,19 +697,25 @@ elif st.session_state.step == 3:
         st.session_state.step = 1
         st.rerun()
 
-    # --- PDF GENERATOR ---
+# --- PDF GENERATOR ---
     pdf_output = None
     try:
         from fpdf import FPDF
+        # Use FPDF2 for better table and cloud support
         pdf = FPDF(orientation="L", unit="mm", format="A4")
-        pdf.set_margins(10, 10, 10); pdf.add_page()
+        pdf.set_margins(10, 10, 10)
+        pdf.add_page()
+        
+        # Standard Core Font (Safe for Linux/Hugging Face)
         pdf.set_font("helvetica", "B", 16)
         pdf.cell(0, 10, "CardScout AI: Strategic Report", align="C", new_x="LMARGIN", new_y="NEXT")
         pdf.ln(5)
 
+        # Pre-process text to remove symbols that break standard PDF encoding
         raw_text = st.session_state.final_recommendation.replace("₹", "Rs.").replace("**", "").replace("*", "")
         lines = raw_text.split('\n')
-        table_data = []; in_table = False
+        table_data = []
+        in_table = False
         
         for line in lines:
             line_str = line.strip()
@@ -729,28 +735,50 @@ elif st.session_state.step == 3:
                             for i, row_data in enumerate(table_data):
                                 pdf.set_font("helvetica", "B" if i == 0 else "", 7)
                                 row = table.row()
-                                for cell_data in row_data: row.cell(cell_data)
+                                for cell_data in row_data: 
+                                    row.cell(cell_data)
                     except Exception:
                         pdf.set_font("helvetica", size=9)
                         for r in table_data:
                             pdf.multi_cell(0, 6, " | ".join([c for c in r if c]))
                             pdf.ln(1)
-                    pdf.ln(5); table_data = []; in_table = False
+                    pdf.ln(5)
+                    table_data = []
+                    in_table = False
                 
                 pdf.set_font("helvetica", size=10)
-                if line_str == "": pdf.ln(4)
-                else: pdf.multi_cell(0, 6, line_str)
-        pdf_output = bytes(pdf.output())
-    except Exception:
-        try:
-            from fpdf import FPDF
-            emergency_pdf = FPDF(); emergency_pdf.add_page(); emergency_pdf.set_font("helvetica", size=12)
-            emergency_pdf.multi_cell(0, 10, st.session_state.final_recommendation.replace("₹", "Rs."))
-            pdf_output = bytes(emergency_pdf.output())
-        except: pdf_output = None
+                if line_str == "": 
+                    pdf.ln(4)
+                else: 
+                    # Encode/Decode to ensure character compatibility
+                    safe_line = line_str.encode('latin-1', 'replace').decode('latin-1')
+                    pdf.multi_cell(0, 6, safe_line)
 
+        # FIX: Output as a byte string directly (Cloud-Safe)
+        pdf_output = pdf.output(dest='S').encode('latin-1', 'replace')
+
+    except Exception as e:
+        try:
+            # Emergency fallback if the complex generator fails
+            from fpdf import FPDF
+            emergency_pdf = FPDF()
+            emergency_pdf.add_page()
+            emergency_pdf.set_font("helvetica", size=12)
+            clean_text = st.session_state.final_recommendation.replace("₹", "Rs.").encode('latin-1', 'replace').decode('latin-1')
+            emergency_pdf.multi_cell(0, 10, clean_text)
+            pdf_output = emergency_pdf.output(dest='S').encode('latin-1', 'replace')
+        except: 
+            pdf_output = None
+
+    # --- FINAL ACTION BUTTONS ---
     if pdf_output:
-        c2.download_button("📥 Download Report", data=pdf_output, file_name=f"CardScout_{data.get('name')}.pdf", mime="application/pdf", use_container_width=True)
+        c2.download_button(
+            label="📥 Download Roadmap", 
+            data=pdf_output, 
+            file_name=f"CardScout_{data.get('name')}.pdf", 
+            mime="application/pdf", 
+            use_container_width=True
+        )
     else:
         c2.button("⚠️ PDF Error", disabled=True, use_container_width=True)
         
