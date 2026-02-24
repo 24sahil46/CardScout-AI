@@ -2,7 +2,7 @@
 title: CardScout AI
 emoji: 🕵️
 colorFrom: blue
-colorTo: cyan
+colorTo: indigo
 sdk: streamlit
 app_file: app.py
 pinned: false
