@@ -2,4 +2,6 @@ streamlit
 google-generativeai
 tavily-python
 python-dotenv
+fpdf2
+pathlib
 fpdf
