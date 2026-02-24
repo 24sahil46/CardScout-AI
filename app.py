@@ -5,10 +5,24 @@ import os
 from dotenv import load_dotenv, find_dotenv
 
 # --- INITIALIZATION ---
-load_dotenv(find_dotenv("api.env"))
-tavily = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel('gemini-2.5-flash')
+# 1. Try to get keys from Hugging Face Secrets first
+gemini_key = os.getenv("GEMINI_API_KEY")
+tavily_key = os.getenv("TAVILY_API_KEY")
+
+# 2. If not found (running locally), load from api.env
+if not gemini_key or not tavily_key:
+    load_dotenv(find_dotenv("api.env"))
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    tavily_key = os.getenv("TAVILY_API_KEY")
+
+# 3. Configure Clients
+if gemini_key and tavily_key:
+    tavily = TavilyClient(api_key=tavily_key)
+    genai.configure(api_key=gemini_key)
+    model = genai.GenerativeModel('gemini-2.5-flash')
+else:
+    st.error("API Keys missing. Please set them in Hugging Face Settings > Secrets.")
+    st.stop()
 
 st.set_page_config(page_title="CardScout AI", page_icon="🕵️", layout="wide")
 # --- CUSTOM FINTECH EXECUTIVE THEME (DARK MODE) ---
@@ -783,3 +797,4 @@ elif st.session_state.step == 3:
         c2.button("⚠️ PDF Error", disabled=True, use_container_width=True)
         
     c3.button("Share with Expert", use_container_width=True, icon=":material/share:", disabled=True)
+
