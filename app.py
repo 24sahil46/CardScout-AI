@@ -714,7 +714,7 @@ elif st.session_state.step == 3:
         st.session_state.step = 1
         st.rerun()
 
-    # --- PDF GENERATOR (Core Logic) ---
+    # --- PDF GENERATOR ---
     pdf_output = None
     try:
         from fpdf import FPDF
@@ -766,11 +766,10 @@ elif st.session_state.step == 3:
             pdf_output = bytes(emergency_pdf.output())
         except: pdf_output = None
 
-    # 2. PDF Download Button
     if pdf_output:
-        c2.download_button("📥 Download Report", data=pdf_output, file_name=f"CardScout_{st.session_state.user_data.get('name')}.pdf", mime="application/pdf", use_container_width=True, key="dl_btn")
+        c2.download_button("📥 Download Report", data=pdf_output, file_name=f"CardScout_{data.get('name')}.pdf", mime="application/pdf", use_container_width=True)
     else:
-        c2.button("⚠️ PDF Error", disabled=True, use_container_width=True, key="dl_err")
+        c2.button("⚠️ PDF Error", disabled=True, use_container_width=True)
         
     # --- ACTIVATED SHARE BUTTON (WhatsApp Integration) ---
     import urllib.parse
@@ -787,6 +786,7 @@ elif st.session_state.step == 3:
 
     # 3. Render the Share Button in Column 3
     c3.link_button("Share via WhatsApp", whatsapp_link, use_container_width=True, icon=":material/share:")
+
 
 
 
