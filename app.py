@@ -759,7 +759,7 @@ elif st.session_state.step == 3:
     except Exception:
         try:
             from fpdf import FPDF
-            emergency_pdf = FPDF(); emergency_pdf.add_page(); emergency_pdf.set_font("Arial", size=12)
+            emergency_pdf = FPDF(); emergency_pdf.add_page(); emergency_pdf.set_font("helvetica", size=12)
             emergency_pdf.multi_cell(0, 10, st.session_state.final_recommendation.replace("₹", "Rs."))
             pdf_output = bytes(emergency_pdf.output())
         except: pdf_output = None
@@ -770,6 +770,7 @@ elif st.session_state.step == 3:
         c2.button("⚠️ PDF Error", disabled=True, use_container_width=True)
         
     c3.button("Share with Expert", use_container_width=True, icon=":material/share:", disabled=True)
+
 
 
 
