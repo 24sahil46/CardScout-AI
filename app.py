@@ -711,9 +711,7 @@ elif st.session_state.step == 3:
         st.session_state.step = 1
         st.rerun()
 
-# --- ACTION BUTTON COLUMNS ---
-    # Define columns FIRST so 'c2' is available for the PDF block
-    c1, c2, c3 = st.columns(3)
+
     # --- PDF GENERATOR ---
     pdf_output = None
     try:
@@ -772,6 +770,7 @@ elif st.session_state.step == 3:
         c2.button("⚠️ PDF Error", disabled=True, use_container_width=True)
         
     c3.button("Share with Expert", use_container_width=True, icon=":material/share:", disabled=True)
+
 
 
 
