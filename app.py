@@ -703,16 +703,18 @@ elif st.session_state.step == 3:
         clean_report = clean_report.replace("### Top 5 Podium Recommendations", "")
         st.markdown(clean_report.strip())
 
+    # --- FINAL ACTION BUTTONS ---
     st.markdown("---")
     c1, c2, c3 = st.columns(3)
-    if c1.button("Start New Scout", use_container_width=True, icon=":material/refresh:"):
+    
+    # 1. Start New Scout (Reset)
+    if c1.button("Start New Scout", use_container_width=True, icon=":material/refresh:", key="reset_p3"):
         if "final_recommendation" in st.session_state:
             del st.session_state.final_recommendation
         st.session_state.step = 1
         st.rerun()
 
-
-    # --- PDF GENERATOR ---
+    # --- PDF GENERATOR (Core Logic) ---
     pdf_output = None
     try:
         from fpdf import FPDF
@@ -764,12 +766,29 @@ elif st.session_state.step == 3:
             pdf_output = bytes(emergency_pdf.output())
         except: pdf_output = None
 
+    # 2. PDF Download Button
     if pdf_output:
-        c2.download_button("📥 Download Report", data=pdf_output, file_name=f"CardScout_{data.get('name')}.pdf", mime="application/pdf", use_container_width=True)
+        c2.download_button("📥 Download Report", data=pdf_output, file_name=f"CardScout_{st.session_state.user_data.get('name')}.pdf", mime="application/pdf", use_container_width=True, key="dl_btn")
     else:
-        c2.button("⚠️ PDF Error", disabled=True, use_container_width=True)
+        c2.button("⚠️ PDF Error", disabled=True, use_container_width=True, key="dl_err")
         
-    c3.button("Share with Expert", use_container_width=True, icon=":material/share:", disabled=True)
+    # --- ACTIVATED SHARE BUTTON (WhatsApp Integration) ---
+    import urllib.parse
+    
+    # Prepare the sharing text for WhatsApp
+    occ = st.session_state.user_data.get('occupation', 'Professional')
+    inc = st.session_state.user_data.get('income', 'N/A')
+    summary = st.session_state.get('final_recommendation', '')[:150].replace('*', '')
+    
+    share_text = f"*CardScout AI Analysis*\n\n*Profile:* {occ}\n*Income:* {inc}\n*AI Advice:* {summary}..."
+    
+    # Create the WhatsApp Link
+    whatsapp_link = f"https://wa.me/?text={urllib.parse.quote(share_text)}"
+
+    # 3. Render the Share Button in Column 3
+    c3.link_button("Share via WhatsApp", whatsapp_link, use_container_width=True, icon=":material/share:")
+
+
 
 
 
