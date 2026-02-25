@@ -714,7 +714,7 @@ elif st.session_state.step == 3:
         st.session_state.step = 1
         st.rerun()
 
-    # --- PDF GENERATOR ---
+    # --- PDF GENERATOR (Core Logic) ---
     pdf_output = None
     try:
         from fpdf import FPDF
@@ -766,26 +766,40 @@ elif st.session_state.step == 3:
             pdf_output = bytes(emergency_pdf.output())
         except: pdf_output = None
 
+    # 2. PDF Download Button
     if pdf_output:
-        c2.download_button("📥 Download Report", data=pdf_output, file_name=f"CardScout_{data.get('name')}.pdf", mime="application/pdf", use_container_width=True)
+        c2.download_button("📥 Download Report", data=pdf_output, file_name=f"CardScout_{st.session_state.user_data.get('name')}.pdf", mime="application/pdf", use_container_width=True, key="dl_btn")
     else:
-        c2.button("⚠️ PDF Error", disabled=True, use_container_width=True)
+        c2.button("⚠️ PDF Error", disabled=True, use_container_width=True, key="dl_err")
         
-    # --- ACTIVATED SHARE BUTTON (WhatsApp Integration) ---
+# --- ACTIVATED SHARE HUB ---
     import urllib.parse
-    
-    # Prepare the sharing text for WhatsApp
-    occ = st.session_state.user_data.get('occupation', 'Professional')
-    inc = st.session_state.user_data.get('income', 'N/A')
-    summary = st.session_state.get('final_recommendation', '')[:150].replace('*', '')
-    
-    share_text = f"*CardScout AI Analysis*\n\n*Profile:* {occ}\n*Income:* {inc}\n*AI Advice:* {summary}..."
-    
-    # Create the WhatsApp Link
-    whatsapp_link = f"https://wa.me/?text={urllib.parse.quote(share_text)}"
 
-    # 3. Render the Share Button in Column 3
-    c3.link_button("Share via WhatsApp", whatsapp_link, use_container_width=True, icon=":material/share:")
+    # 1. Prepare Share Data
+    deployment_link = "https://huggingface.co/spaces/24-Sahil/cardscoutai" # Your Hugging Face URL
+    occ = st.session_state.user_data.get('occupation', 'Professional')
+    share_text = f"Check out my Credit Card Finder on CardScout AI! My Profile: {occ}. View the app here: {deployment_link}"
+    
+    # 2. Create the Popover Menu in Column 3
+    with c3.popover("Share link with friends", use_container_width=True, icon=":material/share:"):
+        st.markdown("### 📢 Share CardScout")
+        
+        # Option A: Copy to Clipboard (Built-in Streamlit Code Block)
+        st.write("🔗 **Copy Link:**")
+        st.code(deployment_link, language=None)
+        
+        st.divider()
+
+        # Option B: Share via WhatsApp
+        whatsapp_url = f"https://wa.me/?text={urllib.parse.quote(share_text)}"
+        st.link_button("🟢 Share via WhatsApp", whatsapp_url, use_container_width=True)
+
+        # Option C: Share via Mail
+        mail_subject = urllib.parse.quote("My CardScout AI Financial Roadmap")
+        mail_body = urllib.parse.quote(share_text)
+        mail_url = f"mailto:?subject={mail_subject}&body={mail_body}"
+        st.link_button("📧 Share via Email", mail_url, use_container_width=True)
+
 
 
 
