@@ -711,45 +711,57 @@ elif st.session_state.step == 3:
         st.session_state.step = 1
         st.rerun()
 
-# --- PDF GENERATOR ---
-pdf_output = None
-try:
-    from fpdf import FPDF
-    # Use 'L' for Landscape to better fit your roadmap tables
-    pdf = FPDF(orientation="L", unit="mm", format="A4")
-    pdf.set_margins(10, 10, 10)
-    pdf.add_page()
-    
-    # Use 'helvetica'—it is a "Core Font" guaranteed to be on Hugging Face
-    pdf.set_font("helvetica", "B", 16)
-    pdf.cell(0, 10, "CardScout AI: Strategic Roadmap", align="C", new_x="LMARGIN", new_y="NEXT")
-    pdf.ln(5)
+# --- ACTION BUTTON COLUMNS ---
+    # Define columns FIRST so 'c2' is available for the PDF block
+    c1, c2, c3 = st.columns(3)
 
-    # CRITICAL: Replace '₹' with 'Rs.' because standard fonts don't support the Rupee symbol
-    raw_text = st.session_state.final_recommendation.replace("₹", "Rs.").replace("**", "").replace("*", "")
-    
-    # Encode to 'latin-1' to prevent crashes on hidden special characters
-    safe_text = raw_text.encode('latin-1', 'replace').decode('latin-1')
-    pdf.set_font("helvetica", size=10)
-    pdf.multi_cell(0, 6, safe_text)
+    # --- PDF GENERATOR & DOWNLOAD LOGIC ---
+    # Check if recommendation exists before trying to make a PDF
+    if "final_recommendation" in st.session_state:
+        pdf_output = None
+        try:
+            from fpdf import FPDF
+            pdf = FPDF(orientation="L", unit="mm", format="A4")
+            pdf.set_margins(10, 10, 10)
+            pdf.add_page()
+            
+            pdf.set_font("helvetica", "B", 16)
+            pdf.cell(0, 10, "CardScout AI: Strategic Roadmap", align="C", new_x="LMARGIN", new_y="NEXT")
+            pdf.ln(5)
 
-    # Generate as a byte stream directly
-    pdf_output = pdf.output(dest='S').encode('latin-1', 'replace')
+            # Standardizing text for Cloud encoding
+            raw_text = st.session_state.final_recommendation.replace("₹", "Rs.").replace("**", "").replace("*", "")
+            safe_text = raw_text.encode('latin-1', 'replace').decode('latin-1')
+            
+            pdf.set_font("helvetica", size=10)
+            pdf.multi_cell(0, 6, safe_text)
+            pdf_output = pdf.output(dest='S').encode('latin-1', 'replace')
 
-except Exception as e:
-    st.sidebar.error(f"PDF Debug: {e}") # This helps you see the error in the sidebar
-    pdf_output = None
+        except Exception as e:
+            # Fallback if standard PDF fails
+            pdf_output = None
 
-    # --- FINAL ACTION BUTTONS ---
-if pdf_output:
-    c2.download_button(
-        label="📥 Download Roadmap",
-        data=pdf_output,
-        file_name=f"CardScout_{st.session_state.user_data.get('name')}.pdf",
-        mime="application/pdf",
-        use_container_width=True
-    )
-else:
-    # If this button still shows, check the Sidebar for the debug error
-    c2.button("⚠️ PDF Encoding Error", disabled=True, use_container_width=True)
+        # Render the Download Button in column c2
+        if pdf_output:
+            c2.download_button(
+                label="📥 Download Roadmap",
+                data=pdf_output,
+                file_name=f"CardScout_{data.get('name', 'Report')}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+        else:
+            c2.button("⚠️ PDF Error", disabled=True, use_container_width=True)
+    else:
+        # If recommendation isn't ready, show a placeholder button
+        c2.button("🔍 Scout First...", disabled=True, use_container_width=True)
+
+    # Render other action buttons
+    if c1.button("Start New Scout", use_container_width=True, icon=":material/refresh:"):
+        if "final_recommendation" in st.session_state:
+            del st.session_state.final_recommendation
+        st.session_state.step = 1
+        st.rerun()
+
+    c3.button("Share with Expert", use_container_width=True, icon=":material/share:", disabled=True)
 
