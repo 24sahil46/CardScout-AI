@@ -714,54 +714,65 @@ elif st.session_state.step == 3:
 # --- ACTION BUTTON COLUMNS ---
     # Define columns FIRST so 'c2' is available for the PDF block
     c1, c2, c3 = st.columns(3)
+    # --- PDF GENERATOR ---
+    pdf_output = None
+    try:
+        from fpdf import FPDF
+        pdf = FPDF(orientation="L", unit="mm", format="A4")
+        pdf.set_margins(10, 10, 10); pdf.add_page()
+        pdf.set_font("helvetica", "B", 16)
+        pdf.cell(0, 10, "CardScout AI: Strategic Report", align="C", new_x="LMARGIN", new_y="NEXT")
+        pdf.ln(5)
 
-    # --- PDF GENERATOR & DOWNLOAD LOGIC ---
-    # Check if recommendation exists before trying to make a PDF
-    if "final_recommendation" in st.session_state:
-        pdf_output = None
+        raw_text = st.session_state.final_recommendation.replace("₹", "Rs.").replace("**", "").replace("*", "")
+        lines = raw_text.split('\n')
+        table_data = []; in_table = False
+        
+        for line in lines:
+            line_str = line.strip()
+            if line_str.count('|') >= 2:
+                in_table = True
+                if '---' in line_str: continue 
+                cells = [c.strip() for c in line_str.strip('|').split('|')]
+                if cells: table_data.append(cells)
+            else:
+                if in_table and len(table_data) > 0:
+                    max_cols = max(len(r) for r in table_data)
+                    for r in table_data:
+                        while len(r) < max_cols: r.append("")
+                    try:
+                        pdf.set_font("helvetica", size=7)
+                        with pdf.table(text_align="LEFT", width=277) as table:
+                            for i, row_data in enumerate(table_data):
+                                pdf.set_font("helvetica", "B" if i == 0 else "", 7)
+                                row = table.row()
+                                for cell_data in row_data: row.cell(cell_data)
+                    except Exception:
+                        pdf.set_font("helvetica", size=9)
+                        for r in table_data:
+                            pdf.multi_cell(0, 6, " | ".join([c for c in r if c]))
+                            pdf.ln(1)
+                    pdf.ln(5); table_data = []; in_table = False
+                
+                pdf.set_font("helvetica", size=10)
+                if line_str == "": pdf.ln(4)
+                else: pdf.multi_cell(0, 6, line_str)
+        pdf_output = bytes(pdf.output())
+    except Exception:
         try:
             from fpdf import FPDF
-            pdf = FPDF(orientation="L", unit="mm", format="A4")
-            pdf.set_margins(10, 10, 10)
-            pdf.add_page()
-            
-            pdf.set_font("helvetica", "B", 16)
-            pdf.cell(0, 10, "CardScout AI: Strategic Roadmap", align="C", new_x="LMARGIN", new_y="NEXT")
-            pdf.ln(5)
+            emergency_pdf = FPDF(); emergency_pdf.add_page(); emergency_pdf.set_font("Arial", size=12)
+            emergency_pdf.multi_cell(0, 10, st.session_state.final_recommendation.replace("₹", "Rs."))
+            pdf_output = bytes(emergency_pdf.output())
+        except: pdf_output = None
 
-            # Standardizing text for Cloud encoding
-            raw_text = st.session_state.final_recommendation.replace("₹", "Rs.").replace("**", "").replace("*", "")
-            safe_text = raw_text.encode('latin-1', 'replace').decode('latin-1')
-            
-            pdf.set_font("helvetica", size=10)
-            pdf.multi_cell(0, 6, safe_text)
-            pdf_output = pdf.output(dest='S').encode('latin-1', 'replace')
-
-        except Exception as e:
-            # Fallback if standard PDF fails
-            pdf_output = None
-
-        # Render the Download Button in column c2
-        if pdf_output:
-            c2.download_button(
-                label="📥 Download Roadmap",
-                data=pdf_output,
-                file_name=f"CardScout_{data.get('name', 'Report')}.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
-        else:
-            c2.button("⚠️ PDF Error", disabled=True, use_container_width=True)
+    if pdf_output:
+        c2.download_button("📥 Download Report", data=pdf_output, file_name=f"CardScout_{data.get('name')}.pdf", mime="application/pdf", use_container_width=True)
     else:
-        # If recommendation isn't ready, show a placeholder button
-        c2.button("🔍 Scout First...", disabled=True, use_container_width=True)
-
-    # Render other action buttons
-    if c1.button("Start New Scout", use_container_width=True, icon=":material/refresh:"):
-        if "final_recommendation" in st.session_state:
-            del st.session_state.final_recommendation
-        st.session_state.step = 1
-        st.rerun()
-
+        c2.button("⚠️ PDF Error", disabled=True, use_container_width=True)
+        
     c3.button("Share with Expert", use_container_width=True, icon=":material/share:", disabled=True)
+
+
+
 
