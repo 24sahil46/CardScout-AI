@@ -776,7 +776,7 @@ elif st.session_state.step == 3:
     import urllib.parse
 
     # 1. Prepare Share Data
-    deployment_link = "https://huggingface.co/spaces/24-Sahil/cardscoutai" # Your Hugging Face URL
+    deployment_link = "https://24-sahil-cardscoutai.hf.space" # Your Hugging Face URL
     occ = st.session_state.user_data.get('occupation', 'Professional')
     share_text = f"Check out my Credit Card Finder on CardScout AI! My Profile: {occ}. View the app here: {deployment_link}"
     
@@ -799,6 +799,7 @@ elif st.session_state.step == 3:
         mail_body = urllib.parse.quote(share_text)
         mail_url = f"mailto:?subject={mail_subject}&body={mail_body}"
         st.link_button("📧 Share via Email", mail_url, use_container_width=True)
+
 
 
 
